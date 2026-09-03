@@ -113,3 +113,18 @@ async def serve_dashboard():
             return f.read()
     except FileNotFoundError:
         return {"status": "Live", "message": "My Personal API Dashboard"}
+
+from pathlib import Path
+from fastapi.responses import HTMLResponse
+
+# ... your other API routes (like /api/calendar, /api/tasks, etc.) are above here ...
+
+# Get the directory where main.py is located
+BASE_DIR = Path(__file__).resolve().parent
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_dashboard():
+    html_path = BASE_DIR / "index.html"
+    if html_path.exists():
+        return html_path.read_text(encoding="utf-8")
+    return {"status": "Live", "message": "My Personal API Dashboard (HTML file missing)"}
