@@ -102,3 +102,14 @@ def get_liked_videos(account_name: str):
     service = get_google_service("youtube", "v3", token_file)
     request = service.videos().list(part="snippet,contentDetails", myRating="like", maxResults=5)
     return request.execute().get("items", [])
+
+
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_dashboard():
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return {"status": "Live", "message": "My Personal API Dashboard"}

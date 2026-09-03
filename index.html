@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raihan — Personal Command Center</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: rgba(28, 28, 30, 0.7);
+            --text-primary: #f5f5f7;
+            --text-secondary: #86868b;
+            --accent: #2997ff;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 60px 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 600;
+            letter-spacing: -0.015em;
+            margin: 0 0 10px 0;
+            background: linear-gradient(180deg, #ffffff 0%, #a1a1a6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .card h2 {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .metric-display {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 15px;
+        }
+
+        .data-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .data-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .data-list li:last-child {
+            border-bottom: none;
+        }
+
+        .loading {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Dashboard.</h1>
+            <p class="subtitle">Personal Quantified-Self & System Status</p>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <h2>Google Tasks</h2>
+                <div id="tasks-metric" class="loading">Loading tasks...</div>
+                <ul id="tasks-list" class="data-list"></ul>
+            </div>
+
+            <div class="card">
+                <h2>Upcoming Calendar</h2>
+                <ul id="calendar-list" class="data-list"><li class="loading">Loading schedule...</li></ul>
+            </div>
+
+            <div class="card">
+                <h2>Developer Metrics</h2>
+                <div id="github-metric" class="loading">Loading profile...</div>
+            </div>
+
+            <div class="card">
+                <h2>Active Projects</h2>
+                <ul id="projects-list" class="data-list"><li class="loading">Loading projects...</li></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "https://rae-ka-api-production.up.railway.app";
+
+        async function loadDashboard() {
+            // 1. Fetch Calendar
+            try {
+                const res = await fetch(`${API_BASE}/api/calendar`);
+                const events = await res.json();
+                const calList = document.getElementById("calendar-list");
+                calList.innerHTML = "";
+                if(events.length === 0) {
+                    calList.innerHTML = "<li>No upcoming events</li>";
+                } else {
+                    events.forEach(ev => {
+                        const li = document.createElement("li");
+                        const time = ev.start.dateTime || ev.start.date;
+                        li.textContent = `${ev.summary} (${new Date(time).toLocaleDateString()})`;
+                        calList.appendChild(li);
+                    });
+                }
+            } catch(e) {
+                document.getElementById("calendar-list").innerHTML = "<li>Failed to load calendar</li>";
+            }
+
+            // 2. Fetch Projects
+            try {
+                const res = await fetch(`${API_BASE}/api/projects`);
+                const data = await res.json();
+                const projList = document.getElementById("projects-list");
+                projList.innerHTML = "";
+                data.featured.forEach(proj => {
+                    const li = document.createElement("li");
+                    li.textContent = proj.replaceAll("_", " ").toUpperCase();
+                    projList.appendChild(li);
+                });
+            } catch(e) {
+                document.getElementById("projects-list").innerHTML = "<li>Failed to load projects</li>";
+            }
+
+            // 3. Fetch GitHub
+            try {
+                const res = await fetch(`${API_BASE}/api/github/asraihan`);
+                const data = await res.json();
+                document.getElementById("github-metric").innerHTML = `
+                    <div class="metric-display">${data.public_repos}</div>
+                    <div style="color: #86868b; font-size: 0.9rem;">Public Repositories on GitHub</div>
+                `;
+            } catch(e) {
+                document.getElementById("github-metric").textContent = "Could not load stats";
+            }
+
+            // 4. Fetch Tasks
+            try {
+                const res = await fetch(`${API_BASE}/api/tasks`);
+                const data = await res.json();
+                const taskMetric = document.getElementById("tasks-metric");
+                const taskList = document.getElementById("tasks-list");
+                taskList.innerHTML = "";
+                
+                let totalLists = data.length || 0;
+                taskMetric.innerHTML = `
+                    <div class="metric-display">${totalLists}</div>
+                    <div style="color: #86868b; font-size: 0.9rem;">Active Task Lists Connected</div>
+                `;
+                
+                data.forEach(list => {
+                    const li = document.createElement("li");
+                    li.textContent = `List: ${list.title}`;
+                    taskList.appendChild(li);
+                });
+            } catch(e) {
+                document.getElementById("tasks-metric").textContent = "Could not load tasks";
+            }
+        }
+
+        // Run data load on page start
+        loadDashboard();
+    </script>
+</body>
+</html>
