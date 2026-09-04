@@ -141,6 +141,10 @@ APPLE_DASHBOARD_HTML = """
         .data-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
         .data-list li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; color: var(--text-secondary); }
         .loading { color: var(--text-secondary); font-style: italic; }
+        
+        /* New CSS to make the YouTube card look clickable */
+        .clickable { cursor: pointer; transition: opacity 0.2s; }
+        .clickable:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -167,10 +171,28 @@ APPLE_DASHBOARD_HTML = """
                 <h2>Active Projects</h2>
                 <ul id="projects-list" class="data-list"><li class="loading">Loading projects...</li></ul>
             </div>
+            
+            <!-- NEW YOUTUBE CARD -->
+            <div class="card">
+                <h2>YouTube Metrics</h2>
+                <div id="youtube-metric" class="loading clickable" onclick="toggleYouTubeList()">Loading videos...</div>
+                <ul id="youtube-list" class="data-list" style="display: none; margin-top: 15px;"></ul>
+            </div>
         </div>
     </div>
     <script>
         const API_BASE = window.location.origin;
+
+        // The JavaScript function that handles the click!
+        function toggleYouTubeList() {
+            const list = document.getElementById("youtube-list");
+            if (list.style.display === "none") {
+                list.style.display = "block";
+            } else {
+                list.style.display = "none";
+            }
+        }
+
         async function loadDashboard() {
             try {
                 const res = await fetch(`${API_BASE}/api/calendar`);
@@ -227,13 +249,43 @@ APPLE_DASHBOARD_HTML = """
                     taskList.appendChild(li);
                 });
             } catch(e) { document.getElementById("tasks-metric").textContent = "Could not load tasks"; }
+
+            // NEW YOUTUBE FETCH CODE
+            try {
+                // Hitting your existing YouTube liked videos route, using 'primary' as the account
+                const res = await fetch(`${API_BASE}/api/youtube/primary/liked`);
+                const videos = await res.json();
+                
+                const ytMetric = document.getElementById("youtube-metric");
+                const ytList = document.getElementById("youtube-list");
+                ytList.innerHTML = "";
+                
+                let totalVideos = videos.length || 0;
+                ytMetric.innerHTML = `
+                    <div class="metric-display">${totalVideos}</div>
+                    <div style="color: #86868b; font-size: 0.9rem;">Liked Videos (Tap to expand list)</div>
+                `;
+                
+                if (totalVideos === 0) {
+                    ytList.innerHTML = "<li>No liked videos found</li>";
+                } else {
+                    videos.forEach(vid => {
+                        const li = document.createElement("li");
+                        // Grab the title from the YouTube snippet data
+                        li.textContent = vid.snippet ? vid.snippet.title : "Unknown Video";
+                        ytList.appendChild(li);
+                    });
+                }
+            } catch(e) { 
+                document.getElementById("youtube-metric").textContent = "Could not load YouTube stats"; 
+            }
         }
+        
         loadDashboard();
     </script>
 </body>
 </html>
 """
-
 @app.get("/", response_class=HTMLResponse, tags=["General"])
 async def serve_dashboard():
     return APPLE_DASHBOARD_HTML
