@@ -163,10 +163,21 @@ APPLE_DASHBOARD_HTML = """
                 <h2>Upcoming Calendar</h2>
                 <ul id="calendar-list" class="data-list"><li class="loading">Loading schedule...</li></ul>
             </div>
-            <div class="card">
+            
+            <!-- Developer Metrics Card (Full Width) -->
+            <div class="card" style="grid-column: 1 / -1;">
                 <h2>Developer Metrics</h2>
+                
+                <!-- Your Repo Count -->
                 <div id="github-metric" class="loading">Loading profile...</div>
+                
+                <!-- The Green Contribution Graph -->
+                <div style="margin-top: 30px; overflow-x: auto; padding-bottom: 10px;">
+                    <p style="color: #86868b; font-size: 0.9rem; margin-bottom: 10px;">Yearly Contributions</p>
+                    <img src="https://ghchart.rshah.org/asraihan" alt="Raihan's GitHub Contributions" style="min-width: 700px; width: 100%; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.3));" />
+                </div>
             </div>
+            
             <div class="card">
                 <h2>Active Projects</h2>
                 <ul id="projects-list" class="data-list"><li class="loading">Loading projects...</li></ul>
@@ -286,6 +297,7 @@ APPLE_DASHBOARD_HTML = """
 </body>
 </html>
 """
+
 @app.get("/", response_class=HTMLResponse, tags=["General"])
 async def serve_dashboard():
     return APPLE_DASHBOARD_HTML
